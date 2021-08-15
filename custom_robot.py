@@ -1,15 +1,15 @@
-import os
+import os, inspect
 import pdb
 import pybullet as p
 import pybullet_data
 
-serverMode = p.GUI # GUI/DIRECT
-robotUrdfPath = "./urdf/sisbot.urdf"
-#robotUrdfPath = "./urdf/robotiq_c2.urdf"
-#robotUrdfPath = "./urdf/ur5.urdf"
+
+#Getting Absolute Path from Relative Path of URDF file
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+robotUrdfPath = os.path.join(currentdir, "./urdf/ur5.urdf")
 
 # connect to engine servers
-physicsClient = p.connect(serverMode)
+physicsClient = p.connect(p.GUI) # GUI/DIRECT
 # add search path for loadURDF
 p.setAdditionalSearchPath(pybullet_data.getDataPath())
 
@@ -22,12 +22,14 @@ robotStartPos = [0,0,0]
 robotStartOrn = p.getQuaternionFromEuler([0,0,0])
 print("----------------------------------------")
 print("Loading robot from {}".format(robotUrdfPath))
+print("----------------------------------------")
 robotID = p.loadURDF(robotUrdfPath, robotStartPos, robotStartOrn)
 
 # get joint information
 numJoints = p.getNumJoints(robotID) 
-print("Number of joints: {}".format(numJoints))
 jointTypeList = ["REVOLUTE", "PRISMATIC", "SPHERICAL", "PLANAR", "FIXED"]
+print("------------------------------------------")
+print("Number of joints: {}".format(numJoints))
 for i in range(numJoints):
     jointInfo = p.getJointInfo(robotID, i)
     jointID = jointInfo[0]
@@ -51,16 +53,22 @@ try:
     flag = True
     textPose = list(p.getBasePositionAndOrientation(robotID)[0])
     textPose[2] += 1
+
     p.addUserDebugText("Press \'w\' and magic!!", textPose, [255,0,0], 1)
+
     prevLinkID = 0
-    linkIDIn = p.addUserDebugParameter("linkID", 0, linkNum-1e-3, 0)
+    linkIDIn = p.addUserDebugParameter("linkID", 0, linkNum-1e-3-1, 0)
+
     while(flag):
         p.stepSimulation()
         linkID = p.readUserDebugParameter(linkIDIn)
         if linkID!=prevLinkID:
             p.setDebugObjectColor(robotID, int(prevLinkID), [255,255,255])
             p.setDebugObjectColor(robotID, int(linkID), [255,0,0])
+            print(int(linkID))
         prevLinkID = linkID
+
     p.disconnect()
+
 except:
     p.disconnect()
